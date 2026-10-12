@@ -1,0 +1,23 @@
+Exam Code,Course Code,Course Name,Department,Duration (min),Date,Start Time,End Time,Period,Room Code,Room Name,Building,Capacity,Enrolled Students,Locked,Source,Validation Status
+EXAM-CS101,CS101,Introduction to Computer Science,Computer Science,120,2026-12-14,09:00:00,12:00:00,Morning,AUD-MAIN,Grand University Auditorium,Central Hall,150,15,NO,MANUAL,VALID
+EXAM-CS201,CS201,Data Structures & Algorithms,Computer Science,180,2026-12-14,13:00:00,16:00:00,Afternoon,HALL-101,Science Lecture Hall A,Science Complex,75,3,NO,MANUAL,VALID
+EXAM-CS301,CS301,Operating Systems & Kernel Design,Computer Science,150,2026-12-14,17:00:00,19:30:00,Evening,LAB-COMP,Advanced Computing Laboratory,Turing Engineering Building,40,9,NO,MANUAL,VALID
+EXAM-CS350,CS350,Database Management Systems,Computer Science,120,2026-12-15,09:00:00,12:00:00,Morning,ROOM-202,Classroom 202,Humanities & Arts,45,9,NO,MANUAL,VALID
+EXAM-CS420,CS420,Machine Learning & Neural Networks,Computer Science,120,2026-12-15,13:00:00,16:00:00,Afternoon,ROOM-305,Classroom 305,Science Complex,35,9,NO,MANUAL,VALID
+EXAM-MA101,MA101,Calculus I & Analytical Geometry,Mathematics,180,2026-12-15,17:00:00,19:30:00,Evening,SEM-A,Executive Seminar Room,Business School,25,39,NO,MANUAL,VALID
+EXAM-MA201,MA201,Linear Algebra & Matrices,Mathematics,150,2026-12-16,09:00:00,12:00:00,Morning,AUD-MAIN,Grand University Auditorium,Central Hall,150,12,NO,MANUAL,VALID
+EXAM-MA204,MA204,Discrete Mathematics,Mathematics,120,2026-12-16,13:00:00,16:00:00,Afternoon,HALL-101,Science Lecture Hall A,Science Complex,75,3,NO,MANUAL,VALID
+EXAM-MA310,MA310,Probability & Statistics,Mathematics,120,2026-12-17,09:00:00,12:00:00,Morning,LAB-COMP,Advanced Computing Laboratory,Turing Engineering Building,40,12,NO,MANUAL,VALID
+EXAM-PHY101,PHY101,Classical Mechanics,Physics,150,2026-12-17,13:00:00,16:00:00,Afternoon,ROOM-202,Classroom 202,Humanities & Arts,45,12,NO,MANUAL,VALID
+EXAM-PHY202,PHY202,Electromagnetism & Waves,Physics,150,2026-12-14,09:00:00,12:00:00,Morning,ROOM-305,Classroom 305,Science Complex,35,12,NO,MANUAL,VALID
+EXAM-PHY305,PHY305,Quantum Mechanics I,Physics,180,2026-12-14,13:00:00,16:00:00,Afternoon,SEM-A,Executive Seminar Room,Business School,25,12,NO,MANUAL,VALID
+EXAM-EE101,EE101,Circuit Theory & Analysis,Electrical Eng,150,2026-12-14,17:00:00,19:30:00,Evening,AUD-MAIN,Grand University Auditorium,Central Hall,150,12,NO,MANUAL,VALID
+EXAM-EE210,EE210,Digital Logic & FPGA Design,Electrical Eng,120,2026-12-15,09:00:00,12:00:00,Morning,HALL-101,Science Lecture Hall A,Science Complex,75,12,NO,MANUAL,VALID
+EXAM-EE320,EE320,Signals & Systems,Electrical Eng,150,2026-12-15,13:00:00,16:00:00,Afternoon,LAB-COMP,Advanced Computing Laboratory,Turing Engineering Building,40,12,NO,MANUAL,VALID
+EXAM-BUS101,BUS101,Principles of Management,Business,120,2026-12-15,17:00:00,19:30:00,Evening,ROOM-202,Classroom 202,Humanities & Arts,45,12,NO,MANUAL,VALID
+EXAM-BUS205,BUS205,Corporate Financial Accounting,Business,150,2026-12-16,09:00:00,12:00:00,Morning,ROOM-305,Classroom 305,Science Complex,35,12,NO,MANUAL,VALID
+EXAM-BUS310,BUS310,Strategic Marketing,Business,120,2026-12-16,13:00:00,16:00:00,Afternoon,SEM-A,Executive Seminar Room,Business School,25,12,NO,MANUAL,VALID
+EXAM-BUS401,BUS401,Business Analytics & Big Data,Business,120,2026-12-17,09:00:00,12:00:00,Morning,AUD-MAIN,Grand University Auditorium,Central Hall,150,12,NO,MANUAL,VALID
+EXAM-HUM102,HUM102,Professional Ethics & Law,Humanities,90,2026-12-17,13:00:00,16:00:00,Afternoon,HALL-101,Science Lecture Hall A,Science Complex,75,9,NO,MANUAL,VALID
+EXAM-ENG201,ENG201,Technical Writing & Communication,Humanities,90,2026-12-14,09:00:00,12:00:00,Morning,LAB-COMP,Advanced Computing Laboratory,Turing Engineering Building,40,0,NO,MANUAL,VALID
+EXAM-CS499,CS499,Senior Capstone Defense,Computer Science,120,2026-12-14,09:00:00,12:00:00,Morning,AUD-MAIN,Grand University Auditorium,Central Hall,150,1,YES,MANUAL,VALID
