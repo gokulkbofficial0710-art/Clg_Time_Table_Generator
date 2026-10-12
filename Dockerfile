@@ -29,7 +29,14 @@ WORKDIR /app/backend
 RUN alembic upgrade head
 
 ENV ENVIRONMENT=production
+ENV PYTHONPATH=/app/backend
 ENV PORT=8000
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Create entrypoint script and compatibility wrapper for platforms trying to execute cd
+RUN printf '#!/bin/sh\ncd /app/backend\nexec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"\n' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh \
+    && cp /entrypoint.sh /bin/cd
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD []
