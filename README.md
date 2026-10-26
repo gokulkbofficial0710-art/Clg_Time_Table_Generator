@@ -7,6 +7,9 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Pytest](https://img.shields.io/badge/Tests-Pytest%20+%20Vitest-brightgreen)](https://docs.pytest.org)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/gokulkbofficial0710-art/Clg_Time_Table_Generator)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/new?template=https://github.com/gokulkbofficial0710-art/Clg_Time_Table_Generator)
+
 An enterprise-grade, constraint-based university examination scheduling system powered by **Google OR-Tools CP-SAT**. Automatically generates clash-free exam timetables while honoring student cohorts, venue capacities, room feature suitability, exam durations, administrative locks, and weighted soft constraints.
 
 ---
