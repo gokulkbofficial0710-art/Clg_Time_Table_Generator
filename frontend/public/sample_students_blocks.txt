@@ -1,0 +1,32 @@
+# ==============================================================================
+# SAMPLE STUDENT COHORT DATA (KEY-VALUE BLOCK FORMAT)
+# College Examination Timetable Management System
+# ==============================================================================
+
+Student ID: STU-2026-7001
+Name: Benjamin Hayes
+Department: Computer Science
+Semester: 5
+Courses: CS101, CS201, CS420
+Accommodations: Extra Time
+---
+Student ID: STU-2026-7002
+Name: Ananya Roy
+Department: Mathematics
+Semester: 5
+Courses: MA101, MA310
+Accommodations: None
+---
+Student ID: STU-2026-7003
+Name: Carlos Mendoza
+Department: Business
+Semester: 5
+Courses: BUS101, BUS310
+Accommodations: None
+---
+Student ID: STU-2026-7004
+Name: Zara Ibrahim
+Department: Electrical Eng
+Semester: 5
+Courses: EE101, EE320
+Accommodations: Wheelchair Access

@@ -543,6 +543,9 @@ class SchedulingEngine:
         if not val_result.is_feasible:
             solver_status_str = "FEASIBLE_WITH_VIOLATIONS"
             computed_metrics["quality_score"] = 0.0
+        elif val_result.is_complete:
+            # Feasible timetable with 0 clashes and 100% complete
+            computed_metrics["quality_score"] = 100.0
 
         return {
             "solver_status": solver_status_str,

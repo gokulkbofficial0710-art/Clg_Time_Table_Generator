@@ -4,13 +4,15 @@ import { api } from '../api/client';
 import { Student, StudentTimetableItem } from '../types';
 import {
   Users, Search, Calendar, BookOpen, Clock, Building2,
-  CheckCircle2, X, AlertTriangle, FileDown
+  CheckCircle2, X, AlertTriangle, FileDown, FileText
 } from 'lucide-react';
+import { StudentTextImportModal } from '../components/StudentTextImportModal';
 
 export const StudentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState('ALL');
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['students', selectedDept, search],
@@ -39,8 +41,17 @@ export const StudentsPage: React.FC = () => {
             Student enrollments, accommodation requirements, and student-wise examination timetables
           </p>
         </div>
-        <div className="text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 font-mono">
-          Total Students: <strong className="text-slate-900 font-bold">{students.length}</strong>
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 font-mono">
+            Total Students: <strong className="text-slate-900 font-bold">{students.length}</strong>
+          </div>
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Attach Student .txt</span>
+          </button>
         </div>
       </div>
 
@@ -222,6 +233,11 @@ export const StudentsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Student Text Import Modal */}
+      <StudentTextImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+      />
     </div>
   );
 };

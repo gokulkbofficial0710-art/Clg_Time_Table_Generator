@@ -1,6 +1,6 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.student import Student
@@ -10,11 +10,104 @@ from app.models.timetable import TimetableVersion
 from app.models.assignment import TimetableAssignment
 from app.schemas.student import (
     StudentCreate, StudentUpdate, StudentResponse, StudentTimetableItem,
-    StudentExamSeating, StudentSeatingResponse, DepartmentSeatingSummary
+    StudentExamSeating, StudentSeatingResponse, DepartmentSeatingSummary,
+    HallSeatingChart, ParsedStudentItem, StudentTextPreviewResponse,
+    StudentTextCommitRequest, StudentTextCommitResponse
 )
 from app.schemas.common import MessageResponse
+from app.services.seating_service import compute_department_alternating_seatings
+from app.services.student_text_parser import (
+    parse_student_text_file, commit_student_text_records
+)
 
 router = APIRouter(prefix="/students", tags=["Students"])
+
+SAMPLE_TEXT_TEMPLATES = {
+    "delimited": """# Student Cohort Registry - Comma Delimited (.txt / .csv)
+# Columns: student_id, name, department, semester, courses, accommodations
+STU-2026-1101, Alex Williams, Computer Science, Semester 5, CS101, Extra Time
+STU-2026-1102, Brittany Brown, Business, Semester 5, BUS101, None
+STU-2026-1103, Charlie Clark, Mathematics, Semester 5, MA101, None
+STU-2026-1104, Daniel Davis, Electrical Eng, Semester 5, CS101, Wheelchair Access
+STU-2026-1105, Evelyn Evans, Physics, Semester 5, MA101, None
+""",
+    "pipe": """# Student Cohort Registry - Pipe Delimited (.txt)
+STU-2026-1201 | Fiona Fisher | Computer Science | Semester 5 | CS101,CS201 | Extra Time
+STU-2026-1202 | George Garcia | Business | Semester 5 | BUS101 | None
+STU-2026-1203 | Hannah Harris | Mathematics | Semester 5 | MA101,MA310 | None
+STU-2026-1204 | Ian Isaac | Electrical Eng | Semester 5 | CS499 | None
+""",
+    "block": """# Student Cohort Registry - Key-Value Block (.txt)
+Student ID: STU-2026-1301
+Name: Julia Jones
+Department: Computer Science
+Semester: Semester 5
+Courses: CS101, CS201
+Accommodations: Extra Time
+---
+Student ID: STU-2026-1302
+Name: Kevin King
+Department: Business
+Semester: Semester 5
+Courses: BUS101, BUS205
+Accommodations: None
+---
+Student ID: STU-2026-1303
+Name: Laura Lewis
+Department: Mathematics
+Semester: Semester 5
+Courses: MA101
+Accommodations: Wheelchair Access
+"""
+}
+
+@router.get("/text-template")
+def get_student_text_templates(format_type: str = "delimited"):
+    template = SAMPLE_TEXT_TEMPLATES.get(format_type.lower(), SAMPLE_TEXT_TEMPLATES["delimited"])
+    return Response(
+        content=template,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename=students_{format_type}_template.txt"}
+    )
+
+@router.post("/preview-text", response_model=StudentTextPreviewResponse)
+async def preview_student_text(
+    file: Optional[UploadFile] = File(None),
+    raw_text: Optional[str] = Form(None)
+):
+    content = ""
+    if file:
+        file_bytes = await file.read()
+        try:
+            content = file_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            content = file_bytes.decode("latin-1", errors="replace")
+    elif raw_text:
+        content = raw_text
+
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="Please upload a .txt file or paste student records text.")
+
+    res = parse_student_text_file(content)
+    res["sample_text"] = content[:500]
+    return res
+
+@router.post("/commit-text", response_model=StudentTextCommitResponse)
+def commit_student_text(
+    req: StudentTextCommitRequest,
+    db: Session = Depends(get_db)
+):
+    if not req.students:
+        raise HTTPException(status_code=400, detail="No student records provided to commit.")
+
+    items_dict = [st.model_dump() for st in req.students]
+    res = commit_student_text_records(
+        db=db,
+        students_data=items_dict,
+        overwrite=req.overwrite_existing,
+        auto_enroll=req.auto_enroll_courses
+    )
+    return res
 
 @router.get("", response_model=List[StudentResponse])
 def get_all_students(
@@ -80,58 +173,34 @@ def get_student_seatings(
         query = query.filter((Student.name.ilike(s)) | (Student.student_id.ilike(s)))
     students = query.order_by(Student.department, Student.student_id).all()
 
-    # Pre-fetch assignments for this version
-    assignments = db.query(TimetableAssignment).filter_by(timetable_id=ver.id).all()
-    assignment_by_exam_id = {a.exam_id: a for a in assignments}
-
-    # Map enrollments for deterministic desk numbering per exam session
-    all_enrollments = db.query(StudentEnrollment).all()
-    exam_students_map = {}
-    for en in all_enrollments:
-        exam_students_map.setdefault(en.exam_id, []).append(en.student_id)
-    for e_id in exam_students_map:
-        exam_students_map[e_id].sort()
+    # Compute department-wise alternating seating allocation
+    seating_result = compute_department_alternating_seatings(db, version_id=ver.id)
 
     results = []
     for s in students:
         s_exam_seatings = []
         for en in s.enrollments:
-            a = assignment_by_exam_id.get(en.exam_id)
-            if not a or not a.timeslot or not a.room:
+            info = seating_result.seatings_map.get((s.id, en.exam_id))
+            if not info:
                 continue
-            exam = a.exam
-            slot = a.timeslot
-            room = a.room
-            if not exam:
-                continue
-
-            enrolled_list = exam_students_map.get(exam.id, [])
-            seat_idx = (enrolled_list.index(s.id) + 1) if s.id in enrolled_list else 1
-            seat_str = f"{room.room_code}-D{seat_idx:02d}"
-
-            date_str = str(slot.date)
-            try:
-                date_dt = datetime.strptime(date_str, "%Y-%m-%d")
-                day_name = date_dt.strftime("%A")
-            except Exception:
-                day_name = "Exam Day"
 
             s_exam_seatings.append(StudentExamSeating(
-                exam_id=exam.id,
-                exam_code=exam.exam_code,
-                course_code=exam.course_code,
-                course_name=exam.course_name,
-                date=date_str,
-                day_name=day_name,
-                start_time=str(slot.start_time),
-                end_time=str(slot.end_time),
-                period=slot.period,
-                room_code=room.room_code,
-                room_name=room.name,
-                building=room.building,
-                room_capacity=room.capacity,
-                seat_number=seat_str,
-                is_locked=a.is_locked
+                exam_id=info["exam_id"],
+                exam_code=info["exam_code"],
+                course_code=info["course_code"],
+                course_name=info["course_name"],
+                date=info["date"],
+                day_name=info.get("day_name") or "Exam Day",
+                start_time=info["start_time"],
+                end_time=info["end_time"],
+                period=info.get("period") or "",
+                room_code=info["room_code"],
+                room_name=info["room_name"],
+                building=info["building"],
+                room_capacity=info.get("room_capacity"),
+                seat_number=info["seat_number"],
+                bench_number=info.get("bench_number"),
+                is_locked=info.get("is_locked", False)
             ))
 
         s_exam_seatings.sort(key=lambda x: (x.date, x.start_time))
@@ -150,6 +219,44 @@ def get_student_seatings(
         ))
 
     return results
+
+@router.get("/seatings/hall-charts", response_model=List[HallSeatingChart])
+def get_hall_seating_charts(
+    version_id: Optional[int] = None,
+    room_code: Optional[str] = None,
+    date: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns visual room/hall seating charts with benches arranged department-wise alternatively
+    (e.g., Bench 1: Computer Science, Bench 2: Business, etc.).
+    """
+    if version_id:
+        ver = db.query(TimetableVersion).filter_by(id=version_id).first()
+    else:
+        ver = db.query(TimetableVersion).filter_by(is_active=True).first()
+
+    if not ver:
+        return []
+
+    is_pre_opt = (
+        ver.solver_status in ("PRE_OPTIMIZATION", "DRAFT", "PENDING")
+        or (ver.quality_score == 0.0)
+        or "pre-optimization" in (ver.name or "").lower()
+        or (ver.metrics and ver.metrics.get("is_optimized") is False)
+    )
+    if is_pre_opt:
+        return []
+
+    seating_res = compute_department_alternating_seatings(db, version_id=ver.id)
+    charts = seating_res.hall_charts
+
+    if room_code:
+        charts = [c for c in charts if c["room_code"] == room_code]
+    if date:
+        charts = [c for c in charts if c["date"] == date]
+
+    return charts
 
 @router.get("/seatings/departments", response_model=List[DepartmentSeatingSummary])
 def get_departments_seating_summary(

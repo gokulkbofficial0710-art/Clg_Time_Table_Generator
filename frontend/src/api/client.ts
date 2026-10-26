@@ -2,7 +2,9 @@ import {
   Exam, Student, Room, TimeSlot, Assignment, TimetableVersion,
   DashboardSummary, ConflictResponse, BaselineComparisonResponse,
   GenerateParams, StudentTimetableItem, StudentSeatingResponse, DepartmentSeatingSummary,
-  BacklogRecord, BacklogCreateInput, BacklogSummary
+  HallSeatingChart,
+  BacklogRecord, BacklogCreateInput, BacklogSummary,
+  ParsedStudentItem, StudentTextPreviewResponse, StudentTextCommitResponse
 } from '../types';
 
 const BASE_URL = '/api';
@@ -65,6 +67,42 @@ export const api = {
   updateStudent: (id: number, data: Partial<Student>) => fetchJson<Student>(`/students/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteStudent: (id: number) => fetchJson<{ message: string }>(`/students/${id}`, { method: 'DELETE' }),
   getStudentTimetable: (id: number) => fetchJson<StudentTimetableItem[]>(`/students/${id}/timetable`),
+
+  // Student Text / File Import (.txt)
+  previewStudentText: async (payload: { file?: File; raw_text?: string }): Promise<StudentTextPreviewResponse> => {
+    const formData = new FormData();
+    if (payload.file) {
+      formData.append('file', payload.file);
+    }
+    if (payload.raw_text) {
+      formData.append('raw_text', payload.raw_text);
+    }
+    const res = await fetch(`${BASE_URL}/students/preview-text`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      let err = 'Failed to preview student text file';
+      try {
+        const d = await res.json();
+        err = d.detail || d.message || err;
+      } catch {}
+      throw new Error(err);
+    }
+    return res.json();
+  },
+  commitStudentText: (data: {
+    students: ParsedStudentItem[];
+    overwrite_existing?: boolean;
+    auto_enroll_courses?: boolean;
+  }): Promise<StudentTextCommitResponse> =>
+    fetchJson<StudentTextCommitResponse>('/students/commit-text', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getStudentTextTemplateUrl: (format_type = 'delimited') =>
+    `${BASE_URL}/students/text-template?format_type=${format_type}`,
+
 
   // Rooms
   getRooms: () => fetchJson<Room[]>('/rooms'),
@@ -170,6 +208,13 @@ export const api = {
     if (department && department !== 'ALL') q.append('department', department);
     if (version_id) q.append('version_id', String(version_id));
     return `${BASE_URL}/export/students/seatings/csv?${q.toString()}`;
+  },
+  getHallSeatingCharts: (params?: { version_id?: number; room_code?: string; date?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.version_id) q.append('version_id', String(params.version_id));
+    if (params?.room_code && params.room_code !== 'ALL') q.append('room_code', params.room_code);
+    if (params?.date && params.date !== 'ALL') q.append('date', params.date);
+    return fetchJson<HallSeatingChart[]>(`/students/seatings/hall-charts?${q.toString()}`);
   },
 
   // Backlogs & Arrears Examination Registry (Weekend Sessions)

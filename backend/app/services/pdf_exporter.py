@@ -199,6 +199,7 @@ def generate_department_seatings_pdf(
     # Title & Metadata Banner
     dept_label = department if department else "All Academic Departments"
     elements.append(Paragraph(f"Official Student Seating & Examination Hall Roster", title_style))
+    elements.append(Paragraph(f"<b>Policy:</b> Department-Wise Alternating Desk Allocation (Anti-Cheating Integrity Policy)", subtitle_style))
     
     meta_parts = [
         f"<b>Department:</b> {dept_label}",

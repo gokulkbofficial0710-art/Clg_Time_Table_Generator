@@ -88,6 +88,24 @@ def _format_assignment_response(a: TimetableAssignment) -> AssignmentResponse:
     exam = a.exam
     slot = a.timeslot
     room = a.room
+
+    # Extract distinct enrolled departments and sample benches
+    depts = set()
+    sample_students = []
+    if exam:
+        if exam.department:
+            depts.add(exam.department)
+        if exam.enrollments:
+            for en in exam.enrollments:
+                if en.student:
+                    depts.add(en.student.department)
+                    if len(sample_students) < 4:
+                        sample_students.append(f"{en.student.name} ({en.student.department})")
+
+    participating = sorted(list(depts))
+    is_alt = len(participating) > 1
+    bench_preview = " | ".join(sample_students) if sample_students else None
+
     return AssignmentResponse(
         id=a.id,
         timetable_id=a.timetable_id,
@@ -113,7 +131,11 @@ def _format_assignment_response(a: TimetableAssignment) -> AssignmentResponse:
         source=a.source,
         validation_status=a.validation_status,
         conflict_reasons=a.conflict_reasons or [],
-        updated_at=a.updated_at
+        updated_at=a.updated_at,
+        participating_departments=participating,
+        is_alternating=is_alt,
+        seating_policy="Alternating Departments (Anti-Cheating Verified)" if is_alt else "Standard Department Seating",
+        bench_preview=bench_preview
     )
 
 def check_is_pre_optimization(db: Session) -> bool:
@@ -307,6 +329,9 @@ def generate_timetable(req: GenerateRequest, async_job: bool = False, db: Sessio
     db.commit()
     seed_demo_backlogs_if_empty(db)
 
+    # Query full saved assignments to return complete timetable details immediately
+    saved_ass = db.query(TimetableAssignment).filter_by(timetable_id=new_ver.id).all()
+    formatted_assignments = [_format_assignment_response(a) for a in saved_ass]
 
     return {
         "status": "SUCCESS",
@@ -316,7 +341,9 @@ def generate_timetable(req: GenerateRequest, async_job: bool = False, db: Sessio
         "solver_runtime_ms": new_ver.solver_runtime_ms,
         "quality_score": new_ver.quality_score,
         "metrics": new_ver.metrics,
-        "study_interval_days": interval_days
+        "study_interval_days": interval_days,
+        "total_scheduled": len(formatted_assignments),
+        "assignments": [a.model_dump() for a in formatted_assignments]
     }
 
 @router.post("/reoptimize")

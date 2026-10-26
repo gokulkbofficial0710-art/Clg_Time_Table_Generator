@@ -12,6 +12,7 @@ from app.schemas.common import MessageResponse
 from app.services.csv_handler import parse_and_preview_csv, commit_imported_data, CSV_TEMPLATES
 from app.services.demo_data import load_demo_dataset, create_infeasible_scenario, reset_infeasible_scenario
 from app.services.pdf_exporter import generate_timetable_pdf
+from app.services.seating_service import compute_department_alternating_seatings
 
 router = APIRouter(prefix="", tags=["Import / Export & Demo Data"])
 
@@ -188,54 +189,31 @@ def export_students_seatings_pdf(
         query = query.filter(Student.department == department)
     students = query.order_by(Student.department, Student.student_id).all()
 
-    assignments = db.query(TimetableAssignment).filter_by(timetable_id=ver.id).all()
-    assignment_by_exam_id = {a.exam_id: a for a in assignments}
-
-    all_enrollments = db.query(StudentEnrollment).all()
-    exam_students_map = {}
-    for en in all_enrollments:
-        exam_students_map.setdefault(en.exam_id, []).append(en.student_id)
-    for e_id in exam_students_map:
-        exam_students_map[e_id].sort()
+    seating_res = compute_department_alternating_seatings(db, version_id=ver.id)
 
     students_seatings_data = []
     for s in students:
         s_exams = []
         for en in s.enrollments:
-            a = assignment_by_exam_id.get(en.exam_id)
-            if not a or not a.timeslot or not a.room:
+            info = seating_res.seatings_map.get((s.id, en.exam_id))
+            if not info:
                 continue
-            exam = a.exam
-            slot = a.timeslot
-            room = a.room
-            if not exam:
-                continue
-
-            enrolled_list = exam_students_map.get(exam.id, [])
-            seat_idx = (enrolled_list.index(s.id) + 1) if s.id in enrolled_list else 1
-            seat_str = f"{room.room_code}-D{seat_idx:02d}"
-
-            date_str = str(slot.date)
-            try:
-                date_dt = datetime.strptime(date_str, "%Y-%m-%d")
-                day_name = date_dt.strftime("%A")
-            except Exception:
-                day_name = "Exam Day"
 
             s_exams.append({
-                "exam_code": exam.exam_code,
-                "course_code": exam.course_code,
-                "course_name": exam.course_name,
-                "date": date_str,
-                "day_name": day_name,
-                "start_time": str(slot.start_time),
-                "end_time": str(slot.end_time),
-                "period": slot.period or "",
-                "room_code": room.room_code,
-                "room_name": room.name,
-                "building": room.building,
-                "seat_number": seat_str,
-                "is_locked": a.is_locked
+                "exam_code": info["exam_code"],
+                "course_code": info["course_code"],
+                "course_name": info["course_name"],
+                "date": info["date"],
+                "day_name": info.get("day_name") or "Exam Day",
+                "start_time": info["start_time"],
+                "end_time": info["end_time"],
+                "period": info.get("period") or "",
+                "room_code": info["room_code"],
+                "room_name": info["room_name"],
+                "building": info["building"],
+                "seat_number": info["seat_number"],
+                "bench_number": info.get("bench_number"),
+                "is_locked": info.get("is_locked", False)
             })
 
         s_exams.sort(key=lambda x: (x["date"], x["start_time"]))
@@ -294,52 +272,29 @@ def export_student_hall_ticket_pdf(
     if is_pre_opt:
         raise HTTPException(status_code=400, detail="Student seating allocations are cleared in pre-optimization state. Please extract the optimized timetable first.")
 
-    assignments = db.query(TimetableAssignment).filter_by(timetable_id=ver.id).all()
-    assignment_by_exam_id = {a.exam_id: a for a in assignments}
-
-    all_enrollments = db.query(StudentEnrollment).all()
-    exam_students_map = {}
-    for en in all_enrollments:
-        exam_students_map.setdefault(en.exam_id, []).append(en.student_id)
-    for e_id in exam_students_map:
-        exam_students_map[e_id].sort()
+    seating_res = compute_department_alternating_seatings(db, version_id=ver.id)
 
     student_exams = []
     for en in student.enrollments:
-        a = assignment_by_exam_id.get(en.exam_id)
-        if not a or not a.timeslot or not a.room:
+        info = seating_res.seatings_map.get((student.id, en.exam_id))
+        if not info:
             continue
-        exam = a.exam
-        slot = a.timeslot
-        room = a.room
-        if not exam:
-            continue
-
-        enrolled_list = exam_students_map.get(exam.id, [])
-        seat_idx = (enrolled_list.index(student.id) + 1) if student.id in enrolled_list else 1
-        seat_str = f"{room.room_code}-D{seat_idx:02d}"
-
-        date_str = str(slot.date)
-        try:
-            date_dt = datetime.strptime(date_str, "%Y-%m-%d")
-            day_name = date_dt.strftime("%A")
-        except Exception:
-            day_name = "Exam Day"
 
         student_exams.append({
-            "exam_code": exam.exam_code,
-            "course_code": exam.course_code,
-            "course_name": exam.course_name,
-            "date": date_str,
-            "day_name": day_name,
-            "start_time": str(slot.start_time),
-            "end_time": str(slot.end_time),
-            "period": slot.period or "",
-            "room_code": room.room_code,
-            "room_name": room.name,
-            "building": room.building,
-            "seat_number": seat_str,
-            "is_locked": a.is_locked
+            "exam_code": info["exam_code"],
+            "course_code": info["course_code"],
+            "course_name": info["course_name"],
+            "date": info["date"],
+            "day_name": info.get("day_name") or "Exam Day",
+            "start_time": info["start_time"],
+            "end_time": info["end_time"],
+            "period": info.get("period") or "",
+            "room_code": info["room_code"],
+            "room_name": info["room_name"],
+            "building": info["building"],
+            "seat_number": info["seat_number"],
+            "bench_number": info.get("bench_number"),
+            "is_locked": info.get("is_locked", False)
         })
 
     student_exams.sort(key=lambda x: (x["date"], x["start_time"]))
@@ -396,15 +351,7 @@ def export_students_seatings_csv(
         query = query.filter(Student.department == department)
     students = query.order_by(Student.department, Student.student_id).all()
 
-    assignments = db.query(TimetableAssignment).filter_by(timetable_id=ver.id).all()
-    assignment_by_exam_id = {a.exam_id: a for a in assignments}
-
-    all_enrollments = db.query(StudentEnrollment).all()
-    exam_students_map = {}
-    for en in all_enrollments:
-        exam_students_map.setdefault(en.exam_id, []).append(en.student_id)
-    for e_id in exam_students_map:
-        exam_students_map[e_id].sort()
+    seating_res = compute_department_alternating_seatings(db, version_id=ver.id)
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -412,39 +359,24 @@ def export_students_seatings_csv(
         "Student ID", "Candidate Name", "Department", "Semester", "Special Accommodations",
         "Exam Code", "Course Code", "Course Title", "Exam Date", "Day",
         "Start Time", "End Time", "Period",
-        "Room Code", "Room Name", "Building Venue", "Allocated Seat / Desk", "Is Locked"
+        "Room Code", "Room Name", "Building Venue", "Allocated Seat / Desk", "Bench Number", "Is Locked"
     ])
 
     for s in students:
         for en in s.enrollments:
-            a = assignment_by_exam_id.get(en.exam_id)
-            if not a or not a.timeslot or not a.room:
+            info = seating_res.seatings_map.get((s.id, en.exam_id))
+            if not info:
                 continue
-            exam = a.exam
-            slot = a.timeslot
-            room = a.room
-            if not exam:
-                continue
-
-            enrolled_list = exam_students_map.get(exam.id, [])
-            seat_idx = (enrolled_list.index(s.id) + 1) if s.id in enrolled_list else 1
-            seat_str = f"{room.room_code}-D{seat_idx:02d}"
-
-            date_str = str(slot.date)
-            try:
-                date_dt = datetime.strptime(date_str, "%Y-%m-%d")
-                day_name = date_dt.strftime("%A")
-            except Exception:
-                day_name = "Exam Day"
 
             writer.writerow([
                 s.student_id, s.name, s.department, s.semester,
                 ", ".join(s.special_accommodations or []),
-                exam.exam_code, exam.course_code, exam.course_name,
-                date_str, day_name,
-                str(slot.start_time), str(slot.end_time), slot.period or "",
-                room.room_code, room.name, room.building,
-                seat_str, "YES" if a.is_locked else "NO"
+                info["exam_code"], info["course_code"], info["course_name"],
+                info["date"], info.get("day_name", "Exam Day"),
+                info["start_time"], info["end_time"], info.get("period", ""),
+                info["room_code"], info["room_name"], info["building"],
+                info["seat_number"], info.get("bench_number", ""),
+                "YES" if info.get("is_locked") else "NO"
             ])
 
     output.seek(0)

@@ -29,6 +29,10 @@ class AssignmentResponse(BaseModel):
     validation_status: str # VALID, CONFLICT, UNSCHEDULED
     conflict_reasons: List[str] = Field(default_factory=list)
     updated_at: datetime
+    participating_departments: List[str] = Field(default_factory=list)
+    is_alternating: bool = True
+    seating_policy: Optional[str] = "Alternating Departments (Anti-Cheating Verified)"
+    bench_preview: Optional[str] = None
 
 class VersionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

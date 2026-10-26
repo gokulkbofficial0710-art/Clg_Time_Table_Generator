@@ -331,6 +331,12 @@ export const CalendarPage: React.FC = () => {
                                 </span>
                                 <span className="font-medium text-slate-600">{a.assigned_student_count} Students</span>
                               </div>
+
+                              {a.participating_departments && a.participating_departments.length > 1 && (
+                                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-purple-700 font-medium bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                  <span>Alternating: {a.participating_departments.join(' + ')}</span>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

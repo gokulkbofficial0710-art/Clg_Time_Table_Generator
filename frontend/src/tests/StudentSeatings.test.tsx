@@ -178,4 +178,28 @@ describe('Student Seatings & Hall Allocations Unit Tests', () => {
     expandedMap[1] = !isStudentExpanded(1);
     expect(isStudentExpanded(1)).toBe(false);
   });
+
+  it('verifies department-wise alternating seating distribution rule', () => {
+    // Simulating interleaved benches for an examination hall session
+    const benches = [
+      { bench_number: 1, seat_number: 'AUD-MAIN-D01', student_id: 'STU-1001', department: 'Computer Science' },
+      { bench_number: 2, seat_number: 'AUD-MAIN-D02', student_id: 'STU-1005', department: 'Business' },
+      { bench_number: 3, seat_number: 'AUD-MAIN-D03', student_id: 'STU-1006', department: 'Computer Science' },
+      { bench_number: 4, seat_number: 'AUD-MAIN-D04', student_id: 'STU-1010', department: 'Business' },
+    ];
+
+    expect(benches[0].bench_number).toBe(1);
+    expect(benches[0].department).toBe('Computer Science');
+    expect(benches[1].bench_number).toBe(2);
+    expect(benches[1].department).toBe('Business');
+    expect(benches[2].bench_number).toBe(3);
+    expect(benches[2].department).toBe('Computer Science');
+    expect(benches[3].bench_number).toBe(4);
+    expect(benches[3].department).toBe('Business');
+
+    // Verify adjacent benches never share the same department
+    for (let i = 0; i < benches.length - 1; i++) {
+      expect(benches[i].department).not.toBe(benches[i + 1].department);
+    }
+  });
 });

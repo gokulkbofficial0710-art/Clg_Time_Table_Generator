@@ -1,0 +1,10 @@
+# ==============================================================================
+# SAMPLE STUDENT COHORT DATA (PIPE-DELIMITED FORMAT)
+# College Examination Timetable Management System
+# Format: student_id | full_name | department | semester | courses | accommodations
+# ==============================================================================
+STU-2026-6001 | Maya Patel | Computer Science | Semester 5 | CS101, CS350 | Extra Time
+STU-2026-6002 | Lucas Silva | Mathematics | Semester 5 | MA101, MA204 | None
+STU-2026-6003 | Natasha Roman | Business | Semester 5 | BUS101, BUS205 | None
+STU-2026-6004 | Tariq Hassan | Electrical Eng | Semester 5 | EE101, EE210 | Wheelchair Access
+STU-2026-6005 | Elena Rostova | Physics | Semester 5 | PHY101, PHY202 | None

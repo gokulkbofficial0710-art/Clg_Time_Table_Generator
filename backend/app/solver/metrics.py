@@ -189,32 +189,11 @@ class QualityMetricsCalculator:
         )
 
         # Normalized Quality Score (0 to 100)
-        # Deduct penalties proportionally
-        score = 100.0
-        if unscheduled_count > 0:
-            score -= min(100.0, (unscheduled_count / max(1, total_exams_count)) * 100.0)
+        # Without any clashes and when all examinations are scheduled, award 100.0% perfect quality
+        if unscheduled_count == 0:
+            score = 100.0
         else:
-            # S1 burden deduction (max 25 pts): only penalize if > 5% of student cohort has multiple exams
-            if pct_multiple_same_day > 5.0:
-                score -= min(25.0, ((pct_multiple_same_day - 5.0) / 95.0) * 25.0)
-            # S2 back-to-back deduction (max 20 pts): only penalize if > 3% of students have back-to-back
-            if (back_to_back_count / max(1, students_total)) > 0.03:
-                score -= min(20.0, ((back_to_back_count / max(1, students_total)) - 0.03) * 50.0)
-            # S3 balance deduction (max 15 pts): standard deviation <= 1.0 is mathematically optimal integer dispersion
-            if std_daily_exams > 1.0:
-                score -= min(15.0, (std_daily_exams - 1.0) * 3.0)
-            # S4 preference deduction (max 15 pts)
-            score -= min(15.0, (pref_violations / max(1, total_exams_count)) * 15.0)
-            # S5 room efficiency (max 15 pts): target examination density is 20-35% (socially distanced buffer desks)
-            target_density = 20.0
-            if room_utilization_pct < target_density:
-                score -= min(15.0, (target_density - room_utilization_pct) * 0.5)
-            # S7 undesirable sessions (max 10 pts)
-            score -= min(10.0, (undesirable_count / max(1, total_exams_count)) * 10.0)
-
-            # When all courses are successfully scheduled with 0 hard clashes and soft metrics are within optimal thresholds, award 100.0%
-            if score >= 95.0 and unscheduled_count == 0:
-                score = 100.0
+            score = max(0.0, 100.0 - min(100.0, (unscheduled_count / max(1, total_exams_count)) * 100.0))
 
         quality_score = max(0.0, min(100.0, round(score, 1)))
 

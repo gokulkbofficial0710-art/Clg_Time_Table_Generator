@@ -92,6 +92,10 @@ export interface Assignment {
   validation_status: string;
   conflict_reasons: string[];
   updated_at: string;
+  participating_departments?: string[];
+  is_alternating?: boolean;
+  seating_policy?: string;
+  bench_preview?: string;
 }
 
 export interface TimetableVersion {
@@ -201,6 +205,7 @@ export interface StudentExamSeating {
   building: string;
   room_capacity?: number;
   seat_number: string;
+  bench_number?: number;
   is_locked: boolean;
 }
 
@@ -221,6 +226,39 @@ export interface DepartmentSeatingSummary {
   students_count: number;
   total_sittings: number;
   distinct_exams_count: number;
+}
+
+export interface BenchAllocation {
+  bench_number: number;
+  seat_number: string;
+  student_id: string;
+  student_name: string;
+  department: string;
+  semester: string;
+  course_code: string;
+  course_name: string;
+  exam_code: string;
+  special_accommodations: string[];
+}
+
+export interface HallSeatingChart {
+  session_key: string;
+  timeslot_id: number;
+  slot_code: string;
+  date: string;
+  day_name: string;
+  start_time: string;
+  end_time: string;
+  period?: string;
+  room_id: number;
+  room_code: string;
+  room_name: string;
+  building: string;
+  room_capacity: number;
+  total_assigned: number;
+  participating_departments: string[];
+  is_alternating: boolean;
+  benches: BenchAllocation[];
 }
 
 export interface BacklogRecord {
@@ -278,5 +316,37 @@ export interface BacklogSummary {
   active_department?: string;
   is_pre_optimization?: boolean;
 }
+
+export interface ParsedStudentItem {
+  row_number: number;
+  student_id: string;
+  name: string;
+  department: string;
+  semester: string;
+  enrolled_courses: string[];
+  special_accommodations: string[];
+  status: 'VALID' | 'INVALID';
+  errors: string[];
+}
+
+export interface StudentTextPreviewResponse {
+  total_found: number;
+  valid_count: number;
+  invalid_count: number;
+  departments_detected: Record<string, number>;
+  students: ParsedStudentItem[];
+  sample_text?: string;
+}
+
+export interface StudentTextCommitResponse {
+  status: string;
+  message: string;
+  total_processed: number;
+  created_count: number;
+  updated_count: number;
+  enrollments_added: number;
+  departments: Record<string, number>;
+}
+
 
 

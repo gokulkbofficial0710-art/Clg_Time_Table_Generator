@@ -27,20 +27,26 @@ if %errorlevel% neq 0 (
 )
 
 :: 3. Setup Backend Virtual Environment
-if not exist "backend\venv\Scripts\python.exe" (
-    echo [1/4] Creating Python virtual environment in backend\venv...
-    python -m venv backend\venv
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to create virtual environment.
-        pause
-        exit /b 1
-    )
-    echo [2/4] Installing backend dependencies...
-    backend\venv\Scripts\python.exe -m pip install -r backend\requirements.txt
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to install backend requirements.
-        pause
-        exit /b 1
+set "PYTHON_EXE=backend\venv\Scripts\python.exe"
+if not exist "!PYTHON_EXE!" (
+    if exist "..\..\host antigravity\Clg_Time_Table_Generator-main\Clg_Time_Table_Generator-main\backend\venv\Scripts\python.exe" (
+        set "PYTHON_EXE=..\..\host antigravity\Clg_Time_Table_Generator-main\Clg_Time_Table_Generator-main\backend\venv\Scripts\python.exe"
+        echo [OK] Using shared verified Python virtual environment.
+    ) else (
+        echo [1/4] Creating Python virtual environment in backend\venv...
+        python -m venv backend\venv
+        if !errorlevel! neq 0 (
+            echo [ERROR] Failed to create virtual environment.
+            pause
+            exit /b 1
+        )
+        echo [2/4] Installing backend dependencies...
+        !PYTHON_EXE! -m pip install -r backend\requirements.txt
+        if !errorlevel! neq 0 (
+            echo [ERROR] Failed to install backend requirements.
+            pause
+            exit /b 1
+        )
     )
 ) else (
     echo [OK] Backend virtual environment verified.
@@ -49,7 +55,7 @@ if not exist "backend\venv\Scripts\python.exe" (
 :: 4. Run database migrations
 echo [3/4] Initializing / migrating SQLite database...
 cd backend
-venv\Scripts\alembic.exe upgrade head
+"!PYTHON_EXE!" -m alembic upgrade head
 cd ..
 
 :: 5. Ensure Frontend Build exists
@@ -102,5 +108,5 @@ if "%MODE%"=="2" (
     echo.
     start http://localhost:8000
     cd backend
-    venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+    "!PYTHON_EXE!" -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 )

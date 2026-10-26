@@ -1,0 +1,15 @@
+# ==============================================================================
+# SAMPLE STUDENT COHORT DATA (COMMA-DELIMITED FORMAT)
+# College Examination Timetable Management System
+# Format: student_id, full_name, department, semester, enrolled_courses, accommodations
+# ==============================================================================
+STU-2026-5001, Liam O'Connor, Computer Science, Semester 5, CS101|CS201, Wheelchair Access
+STU-2026-5002, Sophia Chen, Computer Science, Semester 5, CS101|CS301, Extra Time
+STU-2026-5003, Aarav Sharma, Mathematics, Semester 5, MA101|MA201, None
+STU-2026-5004, Emily Watson, Mathematics, Semester 5, MA101|MA310, None
+STU-2026-5005, Marcus Vance, Business, Semester 5, BUS101|BUS205, None
+STU-2026-5006, Aisha Al-Mansoor, Business, Semester 5, BUS101|BUS310, Extra Time
+STU-2026-5007, Daniel Richter, Electrical Eng, Semester 5, EE101|EE210, None
+STU-2026-5008, Chloe Dubois, Electrical Eng, Semester 5, EE101|EE320, Wheelchair Access
+STU-2026-5009, Hiroshi Tanaka, Physics, Semester 5, PHY101|PHY202, None
+STU-2026-5010, Isabella Rossi, Physics, Semester 5, PHY101|PHY305, None

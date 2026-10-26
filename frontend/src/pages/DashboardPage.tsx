@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, Users, Building2, Clock, CheckCircle2,
   AlertOctagon, Lock, RefreshCw, Download,
-  ExternalLink, TrendingUp, ShieldAlert, Award, FlaskConical, CalendarCheck
+  ExternalLink, TrendingUp, ShieldAlert, Award, FlaskConical, CalendarCheck,
+  FileText
 } from 'lucide-react';
+import { StudentTextImportModal } from '../components/StudentTextImportModal';
 
 export const DashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: api.getDashboard,
@@ -169,13 +172,25 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Students Enrolled</span>
-            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-              <Users className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setImportModalOpen(true)}
+                className="flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200/70 transition cursor-pointer"
+                title="Attach student records from .txt file"
+              >
+                <FileText className="w-3 h-3 text-indigo-600" />
+                <span>Attach .txt</span>
+              </button>
+              <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                <Users className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <div className="text-3xl font-bold text-slate-900 tracking-tight">{dashboard.total_students}</div>
-            <span className="text-xs text-slate-500">Across 5 Depts</span>
+            <Link to="/students" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+              Registry <ExternalLink className="w-3 h-3" />
+            </Link>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between text-xs text-slate-500">
             <span>Student Clashes:</span>
@@ -286,6 +301,22 @@ export const DashboardPage: React.FC = () => {
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
             </Link>
+
+            <button
+              onClick={() => setImportModalOpen(true)}
+              className="w-full flex items-center justify-between p-3 rounded-lg bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 text-blue-950 font-medium text-xs transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-blue-100 text-blue-700">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-slate-900">Attach Student .txt File</div>
+                  <div className="text-[11px] text-slate-500">Import student attributes, department & exams</div>
+                </div>
+              </div>
+              <span className="text-[10px] bg-blue-200/80 px-2 py-0.5 rounded text-blue-900 font-mono font-semibold">TXT</span>
+            </button>
 
             {totalClashes > 0 ? (
               <button
@@ -416,6 +447,12 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Student Text File Attachment & Import Modal */}
+      <StudentTextImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+      />
     </div>
   );
 };

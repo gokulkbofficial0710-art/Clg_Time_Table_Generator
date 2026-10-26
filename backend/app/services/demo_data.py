@@ -201,34 +201,63 @@ def load_demo_dataset(db: Session, include_infeasible: bool = False) -> dict:
         created_students.append(student)
     db.commit()
 
-    # 5. Enrollments: Each student enrolled in 3 to 4 related courses
-    # Exam map for convenience
+    # 5. Enrollments: Each exam has candidates from 2 complementary academic departments
+    # to enforce department-wise alternating seating in EVERY exam room across the entire university.
     exam_by_code = {e.exam_code: e for e in created_exams}
 
-    # Curricula by student group
+    # Group students by department
+    students_by_dept = {}
+    for st in created_students:
+        students_by_dept.setdefault(st.department, []).append(st)
+
+    # 22 course examinations mapped to complementary department pairs (6 students per cohort)
+    # Total enrollment = 12 students per exam, perfectly fitting all rooms (smallest SEM-A is 25)
+    exam_pairings = {
+        # Computer Science examinations
+        "EXAM-CS101": [("Computer Science", 0), ("Mathematics", 0)],
+        "EXAM-CS201": [("Computer Science", 0), ("Business", 0)],
+        "EXAM-CS301": [("Computer Science", 1), ("Electrical Eng", 0)],
+        "EXAM-CS350": [("Computer Science", 1), ("Business", 1)],
+        "EXAM-CS420": [("Computer Science", 1), ("Mathematics", 1)],
+        "EXAM-CS499": [("Computer Science", 0), ("Electrical Eng", 1)],
+
+        # Mathematics examinations
+        "EXAM-MA101": [("Mathematics", 0), ("Physics", 0)],
+        "EXAM-MA201": [("Mathematics", 0), ("Physics", 1)],
+        "EXAM-MA204": [("Mathematics", 1), ("Computer Science", 0)],
+        "EXAM-MA310": [("Mathematics", 1), ("Business", 0)],
+
+        # Physics examinations
+        "EXAM-PHY101": [("Physics", 0), ("Mathematics", 1)],
+        "EXAM-PHY202": [("Physics", 0), ("Electrical Eng", 0)],
+        "EXAM-PHY305": [("Physics", 1), ("Electrical Eng", 1)],
+
+        # Electrical Engineering examinations
+        "EXAM-EE101": [("Electrical Eng", 0), ("Physics", 0)],
+        "EXAM-EE210": [("Electrical Eng", 0), ("Computer Science", 1)],
+        "EXAM-EE320": [("Electrical Eng", 1), ("Mathematics", 0)],
+
+        # Business examinations
+        "EXAM-BUS101": [("Business", 0), ("Physics", 1)],
+        "EXAM-BUS205": [("Business", 0), ("Electrical Eng", 1)],
+        "EXAM-BUS310": [("Business", 1), ("Physics", 0)],
+        "EXAM-BUS401": [("Business", 1), ("Computer Science", 0)],
+
+        # Humanities examinations
+        "EXAM-HUM102": [("Computer Science", 1), ("Business", 1)],
+        "EXAM-ENG201": [("Electrical Eng", 1), ("Mathematics", 1)],
+    }
+
     enrollments_to_add = []
-    for idx, student in enumerate(created_students):
-        s_id = student.id
-        dept = student.department
-
-        if dept == "Computer Science":
-            # CS students: CS101/201, MA101/204, CS301, CS420, HUM102
-            courses = ["EXAM-CS101", "EXAM-MA101", "EXAM-CS201", "EXAM-MA204"] if idx < 12 else ["EXAM-CS301", "EXAM-CS350", "EXAM-CS420", "EXAM-HUM102"]
-            if idx == 0:
-                courses.append("EXAM-CS499") # Senior capstone
-        elif dept == "Mathematics":
-            courses = ["EXAM-MA101", "EXAM-MA201", "EXAM-CS101", "EXAM-MA310"]
-        elif dept == "Physics":
-            courses = ["EXAM-PHY101", "EXAM-MA101", "EXAM-PHY202", "EXAM-PHY305"]
-        elif dept == "Electrical Eng":
-            courses = ["EXAM-EE101", "EXAM-MA101", "EXAM-EE210", "EXAM-EE320"]
-        else: # Business
-            courses = ["EXAM-BUS101", "EXAM-BUS205", "EXAM-BUS310", "EXAM-BUS401"]
-
-        for c_code in courses:
-            exam = exam_by_code.get(c_code)
-            if exam:
-                enrollments_to_add.append(StudentEnrollment(student_id=s_id, exam_id=exam.id))
+    for ex_code, pairs in exam_pairings.items():
+        exam = exam_by_code.get(ex_code)
+        if not exam:
+            continue
+        for dept, cohort_idx in pairs:
+            dept_students = students_by_dept.get(dept, [])
+            selected = dept_students[:6] if cohort_idx == 0 else dept_students[6:]
+            for st in selected:
+                enrollments_to_add.append(StudentEnrollment(student_id=st.id, exam_id=exam.id))
 
     db.bulk_save_objects(enrollments_to_add)
     db.commit()

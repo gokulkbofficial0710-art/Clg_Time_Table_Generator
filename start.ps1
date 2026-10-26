@@ -21,16 +21,21 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 # Backend Venv
 $VenvPython = Join-Path $ScriptDir "backend\venv\Scripts\python.exe"
 if (-not (Test-Path $VenvPython)) {
-    Write-Host "[1/3] Setting up Python virtual environment..." -ForegroundColor Yellow
-    python -m venv backend\venv
-    & $VenvPython -m pip install -r backend\requirements.txt
+    $SharedVenv = "Z:\semester 5\host antigravity\Clg_Time_Table_Generator-main\Clg_Time_Table_Generator-main\backend\venv\Scripts\python.exe"
+    if (Test-Path $SharedVenv) {
+        $VenvPython = $SharedVenv
+        Write-Host "[1/3] Using existing verified Python virtual environment." -ForegroundColor Green
+    } else {
+        Write-Host "[1/3] Setting up Python virtual environment..." -ForegroundColor Yellow
+        python -m venv backend\venv
+        & $VenvPython -m pip install -r backend\requirements.txt
+    }
 }
 
 # Database Migration
 Write-Host "[2/3] Checking database schema & migrations..." -ForegroundColor Yellow
-$AlembicExe = Join-Path $ScriptDir "backend\venv\Scripts\alembic.exe"
 Push-Location (Join-Path $ScriptDir "backend")
-& $AlembicExe upgrade head
+& $VenvPython -m alembic upgrade head
 Pop-Location
 
 # Build Frontend if needed
