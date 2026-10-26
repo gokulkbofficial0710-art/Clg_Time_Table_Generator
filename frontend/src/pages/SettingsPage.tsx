@@ -5,7 +5,8 @@ import { TimetableVersion } from '../types';
 import {
   Database, Upload, Download, RefreshCw, History,
   FileSpreadsheet, FileText, CheckCircle2, AlertOctagon,
-  RotateCcw, ShieldAlert, Award, FlaskConical
+  RotateCcw, ShieldAlert, Award, FlaskConical,
+  Users, Key, Plus, Trash2, UserCheck, Lock
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -14,6 +15,20 @@ export const SettingsPage: React.FC = () => {
   const [importEntity, setImportEntity] = useState<string>('exams');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any>(null);
+
+  // User Management State
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newFullName, setNewFullName] = useState('');
+  const [newRole, setNewRole] = useState('editor');
+  const [userError, setUserError] = useState<string | null>(null);
+  const [userSuccess, setUserSuccess] = useState<string | null>(null);
+
+  const [passwordChangeUser, setPasswordChangeUser] = useState<string | null>(null);
+  const [changePasswordInput, setChangePasswordInput] = useState('');
+
 
   const { data: versions = [], isLoading: loadingVersions } = useQuery({
     queryKey: ['versions'],
@@ -57,6 +72,55 @@ export const SettingsPage: React.FC = () => {
       queryClient.invalidateQueries();
     },
   });
+
+  const { data: users = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: api.getUsers,
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: (data: any) => api.createUser(data),
+    onSuccess: () => {
+      setUserSuccess('User account successfully created.');
+      setUserError(null);
+      setIsAddUserOpen(false);
+      setNewUsername('');
+      setNewEmail('');
+      setNewPassword('');
+      setNewFullName('');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (err: any) => {
+      setUserError(err.message || 'Failed to create user');
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: { username: string; new_password: string }) => api.changePassword(data),
+    onSuccess: (data: any) => {
+      setUserSuccess(data.message || 'Password successfully updated.');
+      setUserError(null);
+      setPasswordChangeUser(null);
+      setChangePasswordInput('');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (err: any) => {
+      setUserError(err.message || 'Failed to update password');
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: number) => api.deleteUser(id),
+    onSuccess: () => {
+      setUserSuccess('User account deleted.');
+      setUserError(null);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (err: any) => {
+      setUserError(err.message || 'Failed to delete user');
+    },
+  });
+
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -307,6 +371,266 @@ export const SettingsPage: React.FC = () => {
           </a>
         </div>
       </div>
+
+      {/* Section 4: User Accounts & Credentials Management */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-3">
+          <div>
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Users className="w-4 h-4 text-indigo-600" />
+              User Accounts & Credentials Management
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Manage system usernames, access roles, and update passwords for administrators, faculty, and viewers
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              setIsAddUserOpen(true);
+              setUserError(null);
+              setUserSuccess(null);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add New User Account
+          </button>
+        </div>
+
+        {userSuccess && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center justify-between">
+            <span>{userSuccess}</span>
+            <button onClick={() => setUserSuccess(null)} className="text-emerald-600 hover:text-emerald-900 font-bold ml-2">×</button>
+          </div>
+        )}
+
+        {userError && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-center justify-between">
+            <span>{userError}</span>
+            <button onClick={() => setUserError(null)} className="text-rose-600 hover:text-rose-900 font-bold ml-2">×</button>
+          </div>
+        )}
+
+        {/* Add User Modal / Form */}
+        {isAddUserOpen && (
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-indigo-600" />
+              Create New Account
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Username *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. jdoe"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  value={newFullName}
+                  onChange={(e) => setNewFullName(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  placeholder="e.g. jdoe@university.edu"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Password *</label>
+                <input
+                  type="password"
+                  placeholder="Min 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Role</label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                >
+                  <option value="admin">Admin (Full Control)</option>
+                  <option value="editor">Editor (Faculty)</option>
+                  <option value="viewer">Viewer (Student)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAddUserOpen(false)}
+                className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!newUsername || !newEmail || !newPassword || createUserMutation.isPending}
+                onClick={() => {
+                  createUserMutation.mutate({
+                    username: newUsername,
+                    email: newEmail,
+                    password: newPassword,
+                    full_name: newFullName || newUsername,
+                    role: newRole,
+                  });
+                }}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer"
+              >
+                {createUserMutation.isPending ? 'Saving...' : 'Save User Account'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Password Change Popover */}
+        {passwordChangeUser && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+            <h4 className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+              <Key className="w-4 h-4 text-amber-600" />
+              Change Password for Account: <span className="font-mono underline">{passwordChangeUser}</span>
+            </h4>
+            <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+              <input
+                type="password"
+                placeholder="Enter new password"
+                value={changePasswordInput}
+                onChange={(e) => setChangePasswordInput(e.target.value)}
+                className="flex-1 bg-white border border-amber-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:border-amber-600"
+              />
+              <button
+                type="button"
+                disabled={!changePasswordInput || changePasswordMutation.isPending}
+                onClick={() => {
+                  changePasswordMutation.mutate({
+                    username: passwordChangeUser,
+                    new_password: changePasswordInput,
+                  });
+                }}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer"
+              >
+                {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordChangeUser(null);
+                  setChangePasswordInput('');
+                }}
+                className="px-3 py-2 bg-white hover:bg-amber-100 text-slate-700 border border-amber-300 rounded-lg text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Users Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+              <tr>
+                <th className="py-3 px-4">User ID</th>
+                <th className="py-3 px-4">Username</th>
+                <th className="py-3 px-4">Full Name</th>
+                <th className="py-3 px-4">Email</th>
+                <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium">
+              {loadingUsers ? (
+                <tr>
+                  <td colSpan={7} className="py-4 text-center text-slate-400">Loading user accounts...</td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-4 text-center text-slate-400">No user accounts found.</td>
+                </tr>
+              ) : (
+                users.map((u: any) => (
+                  <tr key={u.id} className="hover:bg-slate-50/70 transition">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">#{u.id}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-indigo-700">{u.username}</td>
+                    <td className="py-3 px-4 text-slate-900">{u.full_name || '—'}</td>
+                    <td className="py-3 px-4 font-mono text-slate-600">{u.email}</td>
+                    <td className="py-3 px-4">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase ${
+                        u.role === 'admin'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : u.role === 'editor'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        ACTIVE
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right space-x-1.5">
+                      <button
+                        onClick={() => {
+                          setPasswordChangeUser(u.username);
+                          setChangePasswordInput('');
+                          setUserError(null);
+                          setUserSuccess(null);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold text-[11px] shadow-xs transition cursor-pointer"
+                      >
+                        <Key className="w-3 h-3 text-slate-500" />
+                        Change Password
+                      </button>
+
+                      {u.username !== 'admin' && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete user account "${u.username}"?`)) {
+                              deleteUserMutation.mutate(u.id);
+                            }
+                          }}
+                          disabled={deleteUserMutation.isPending}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-[11px] transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
+

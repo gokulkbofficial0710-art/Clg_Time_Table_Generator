@@ -29,3 +29,8 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = None
     role: str
     is_active: bool
+
+class PasswordChangeRequest(BaseModel):
+    username: str
+    new_password: str
+

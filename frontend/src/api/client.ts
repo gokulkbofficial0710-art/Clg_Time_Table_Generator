@@ -259,4 +259,12 @@ export const api = {
     if (params?.student_type && params.student_type !== 'ALL') q.append('student_type', params.student_type);
     return `${BASE_URL}/backlogs/export/csv?${q.toString()}`;
   },
+
+  // User Management
+  getUsers: () => fetchJson<any[]>('/auth/users'),
+  createUser: (data: any) => fetchJson<any>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
+  changePassword: (data: { username: string; new_password: string }) =>
+    fetchJson<any>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
+  deleteUser: (id: number) => fetchJson<any>(`/auth/users/${id}`, { method: 'DELETE' }),
 };
+

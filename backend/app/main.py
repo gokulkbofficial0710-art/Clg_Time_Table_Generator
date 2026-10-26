@@ -28,18 +28,24 @@ async def lifespan(app: FastAPI):
     # Seed default admin user and demo dataset if database is fresh
     db = SessionLocal()
     try:
-        admin = db.query(User).filter_by(username="admin").first()
-        if not admin:
-            admin_user = User(
-                username="admin",
-                email="admin@university.edu",
-                hashed_password=get_password_hash("admin123"),
-                full_name="University Scheduling Administrator",
-                role="admin",
-                is_active=True
-            )
-            db.add(admin_user)
-            db.commit()
+        default_users = [
+            ("admin", "admin@university.edu", "admin123", "University Administrator", "admin"),
+            ("faculty", "faculty@university.edu", "faculty123", "Faculty / Department Head", "editor"),
+            ("coe", "coe@university.edu", "coe123", "Controller of Examinations", "admin"),
+            ("student", "student@university.edu", "student123", "Student Portal Viewer", "viewer"),
+        ]
+        for uname, uemail, upass, ufullname, urole in default_users:
+            if not db.query(User).filter_by(username=uname).first():
+                user_obj = User(
+                    username=uname,
+                    email=uemail,
+                    hashed_password=get_password_hash(upass),
+                    full_name=ufullname,
+                    role=urole,
+                    is_active=True
+                )
+                db.add(user_obj)
+        db.commit()
 
         # Check if rooms table is empty, auto-load demo data so user gets immediate out-of-the-box working experience
         if db.query(Room).count() == 0:
