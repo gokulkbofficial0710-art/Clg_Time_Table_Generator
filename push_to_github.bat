@@ -10,7 +10,7 @@ echo   Repository: https://github.com/gokulkbofficial0710-art/timetable.git
 echo =====================================================================
 echo.
 
-git push -u origin main
+git -c credential.helper= push -u origin main
 
 if %errorlevel% neq 0 (
     echo.
